@@ -1,0 +1,187 @@
+\documentclass[a5paper,11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[portuguese]{babel}
+\usepackage[a5paper,margin=8mm]{geometry}
+\usepackage{array}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{pgffor}
+\usepackage{tikz}
+\usepackage[table]{xcolor}
+
+% ============================
+% Main color pair (active)
+\definecolor{corTitulo}{HTML}{3A0CA3}
+\definecolor{corListas}{HTML}{2ECC71}
+
+% ============================
+% Alternative pairs (comment/uncomment)
+% \definecolor{corTitulo}{HTML}{063049}
+% \definecolor{corListas}{HTML}{AACD6C}
+
+% \definecolor{corTitulo}{HTML}{264653}
+% \definecolor{corListas}{HTML}{FF7B00}
+
+% \definecolor{corTitulo}{HTML}{6A040F}
+% \definecolor{corListas}{HTML}{FFD60A}
+
+% \definecolor{corTitulo}{HTML}{00296B}
+% \definecolor{corListas}{HTML}{9EF01A}
+
+% \definecolor{corTitulo}{HTML}{370617}
+% \definecolor{corListas}{HTML}{FF8500}
+
+% \definecolor{corTitulo}{HTML}{1D3557}
+% \definecolor{corListas}{HTML}{F72585}
+
+% \definecolor{corTitulo}{HTML}{780000}
+% \definecolor{corListas}{HTML}{00C4B3}
+
+% \definecolor{corTitulo}{HTML}{240046}
+% \definecolor{corListas}{HTML}{70E000}
+
+% \definecolor{corTitulo}{HTML}{001D3D}
+% \definecolor{corListas}{HTML}{FF6F61}
+
+% \definecolor{corTitulo}{HTML}{14213D}
+% \definecolor{corListas}{HTML}{E3B505}
+
+% \definecolor{corTitulo}{HTML}{5A0C1D}
+% \definecolor{corListas}{HTML}{FFC300}
+
+% \definecolor{corTitulo}{HTML}{0A2463}
+% \definecolor{corListas}{HTML}{3E92CC}
+
+% \definecolor{corTitulo}{HTML}{1B4332}
+% \definecolor{corListas}{HTML}{F9C74F}
+
+% Difficulty colors
+\definecolor{difficultyEasy}{HTML}{1B5E20}
+\definecolor{difficultyMedium}{HTML}{8D6E00}
+\definecolor{difficultyHard}{HTML}{BF5B04}
+\definecolor{difficultySuperHard}{HTML}{8B0000}
+
+\definecolor{cinza}{gray}{0.25}
+\setlength{\parindent}{0pt}
+\setlength{\tabcolsep}{1pt}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\newcommand{\PuzzleFrame}[1]{%
+  \begin{tikzpicture}[baseline=(B.north)]
+    \node[inner sep=2.5pt, outer sep=0pt] (B) {#1};
+    \draw[line width=0.85pt, color=cinza] (B.south west) rectangle (B.north east);
+  \end{tikzpicture}%
+}
+
+\newcommand{\BattleTopHeader}{%
+  \noindent
+  \begin{tabular*}{\linewidth}{@{}l@{\extracolsep{\fill}}l@{}}
+    \textbf{Data:} \underline{\hspace{0.8cm}} / \underline{\hspace{0.8cm}} / \underline{\hspace{1.3cm}}
+    & \textbf{Vencedor:} \underline{\hspace{2.8cm}} \\
+  \end{tabular*}
+  \vspace{2.5mm}
+}
+
+\newcommand{\TimeField}{\textbf{Tempo: } \underline{\hspace{2.8cm}}}
+
+% Battle page macros
+\newcommand{\cabecalho}{%
+  \textbf{Data:} \underline{\hspace{0.6cm}} /\,
+  \underline{\hspace{0.6cm}} /\,
+  \underline{\hspace{1.1cm}}
+  \hfill
+  \textbf{Vencedor:} \underline{\hspace{3cm}}\par\vspace{3mm}
+}
+\newcommand{\campotempo}{\textbf{Tempo: }\underline{\hspace{2.5cm}}}
+\newcommand{\SopaTopGap}{2mm}
+
+% Grid preparation macros
+\newsavebox{\GridBoxA}\newlength{\GridHeightA}
+\newsavebox{\GridBoxB}\newlength{\GridHeightB}
+\newcommand{\Moldura}[1]{%
+  \begin{tikzpicture}[baseline=(T.north)]
+    \node[inner sep=2.5pt, outer sep=0pt] (T) {#1};
+    \draw[line width=1pt] (T.south west) rectangle (T.north east);
+  \end{tikzpicture}%
+}
+\newcommand{\PrepararGrelhas}{%
+  \sbox{\GridBoxA}{\Moldura{\GridAcontent}}%
+  \setlength{\GridHeightA}{\dimexpr\ht\GridBoxA+\dp\GridBoxA\relax}%
+  \sbox{\GridBoxB}{\Moldura{\GridBcontent}}%
+  \setlength{\GridHeightB}{\dimexpr\ht\GridBoxB+\dp\GridBoxB\relax}%
+}
+
+\graphicspath{{../extras/}{extras/}}
+
+\newcommand{\CoverPage}{%
+  \thispagestyle{empty}
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[corListas] (current page.north west) rectangle ++(7mm,-\paperheight);
+    \fill[corListas] (current page.north east) rectangle ++(-7mm,-\paperheight);
+  \end{tikzpicture}
+  \begin{center}
+    \vspace*{4mm}
+    {\fontsize{28}{30}\selectfont\bfseries\color{corTitulo} Batalhas de\\[2mm]Sopa de Letras\par}
+    \vspace{4mm}
+    {\normalsize Livro de Jogos\par}
+    \vspace{7mm}
+    \includegraphics[width=.62\linewidth]{capa.png}
+    \vfill
+    {\small Feito para competicao divertida e treino mental}
+  \end{center}
+  \newpage
+}
+
+\newcommand{\BackCover}{%
+  \thispagestyle{empty}
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[corListas] (current page.north west) rectangle ++(7mm,-\paperheight);
+    \fill[corListas] (current page.north east) rectangle ++(-7mm,-\paperheight);
+  \end{tikzpicture}
+  \vspace*{\fill}
+  \begin{center}
+    {\small Edicao personalizada}
+  \end{center}
+  \newpage
+}
+
+% ============================
+% Book settings (manual in each copied main.tex)
+\newcommand{\BookFolder}{.}
+\newcommand{\TotalPages}{3}
+
+% Toggle extra pages
+\newif\ifincludecover
+\newif\ifincludebackcover
+\newif\ifincludevictorypage
+\includecovertrue
+\includebackcovertrue
+\includevictorypagefalse
+
+\begin{document}
+
+\ifincludecover
+  \CoverPage
+\fi
+
+\ifincludebackcover
+  \BackCover
+\fi
+
+\setcounter{page}{1}
+\foreach \n in {1,...,\TotalPages}{%
+  \IfFileExists{\BookFolder/\n.tex}{\input{\BookFolder/\n.tex}}{}
+}
+
+\ifincludevictorypage
+  \IfFileExists{../extras/vitorias.tex}{\input{../extras/vitorias.tex}}{}
+\fi
+
+\end{document}

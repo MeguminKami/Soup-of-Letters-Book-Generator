@@ -1,0 +1,58 @@
+2026-02-09 00:06:34,862 - INFO - AI Word Generator initialized with model: llama-3.3-70b-versatile
+2026-02-09 00:06:34,862 - INFO - Session ID: 20260209_000634
+2026-02-09 00:06:34,862 - INFO - Log file: ai_logs\ai_generation_20260209_000634.log
+2026-02-09 00:06:34,863 - INFO - 
+================================================================================
+2026-02-09 00:06:34,863 - INFO - GENERATING WORDS - Page 1
+2026-02-09 00:06:34,863 - INFO - ================================================================================
+2026-02-09 00:06:34,863 - INFO - Required: 14 words
+2026-02-09 00:06:34,863 - INFO - Length distribution: Counter({6: 4, 5: 4, 7: 2, 4: 2, 8: 2})
+2026-02-09 00:06:34,864 - INFO - Themes: ['paris', 'viagens', 'amor']
+2026-02-09 00:06:34,864 - INFO - Already used words: 0
+2026-02-09 00:06:34,864 - INFO - 
+--- Initial Prompt ---
+2026-02-09 00:06:34,864 - INFO - System: You are a precise word generator for word-search puzzles. Generate ONLY valid JSON with the exact format requested. Rules:
+- All words must be uppercase ASCII letters only (A-Z)
+- No spaces, hyphens, ...
+2026-02-09 00:06:34,864 - INFO - User: Generate exactly 14 unique words themed around: paris, viagens, amor.
+Length requirements: 2 words with 4 letters, 4 words with 5 letters, 4 words with 6 letters, 2 words with 7 letters, 2 words with 8 letters.
+Previously used words to avoid: none.
+
+Output format:
+{"words": ["WORD1", "WORD2", "WORD3...
+2026-02-09 00:06:34,864 - INFO - 
+--- Attempt 1/6 ---
+2026-02-09 00:06:35,854 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-02-09 00:06:35,858 - INFO - AI Response: {"words": ["AMOR", "PORT", "FLAME", "HEART", "LOVER", "ROMAN", "FABLES", "PARISE", "LOVERS", "VIAJOR", "ROMANT", "HEARTS", "FLAMES", "ADORES"]}...
+2026-02-09 00:06:35,859 - WARNING - ✗ VALIDATION FAILED: Length mismatch. Required: {6: 4, 7: 2, 5: 4, 4: 2, 8: 2}, Got: {4: 2, 5: 4, 6: 8}
+2026-02-09 00:06:35,859 - INFO - 
+--- Attempt 2/6 ---
+2026-02-09 00:06:36,246 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-02-09 00:06:36,247 - INFO - AI Response: {"words": ["PORT", "AMOR", "FLAME", "HEART", "LOVER", "ROMAN", "PARISE", "PARISAN", "LOVING", "DREAMS", "HONEYs", "ROMANC", "VALENT", "VACANCI"]}...
+2026-02-09 00:06:36,247 - WARNING - ✗ VALIDATION FAILED: Length mismatch. Required: {6: 4, 7: 2, 5: 4, 4: 2, 8: 2}, Got: {4: 2, 5: 4, 6: 6, 7: 2}
+2026-02-09 00:06:36,247 - INFO - 
+--- Attempt 3/6 ---
+2026-02-09 00:06:36,645 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-02-09 00:06:36,646 - INFO - AI Response: {"words": ["PORT", "AMOR", "FLAME", "HEART", "LOVER", "CLOUDS", "ROMANT", "DREAMS", "LOVING", "VOYAGER", "VALENT", "VACANCY", "HOLIDAY", "ROMANCE"]}...
+2026-02-09 00:06:36,646 - WARNING - ✗ VALIDATION FAILED: Length mismatch. Required: {6: 4, 7: 2, 5: 4, 4: 2, 8: 2}, Got: {4: 2, 5: 3, 6: 5, 7: 4}
+2026-02-09 00:06:36,646 - INFO - 
+--- Attempt 4/6 ---
+2026-02-09 00:06:36,955 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-02-09 00:06:36,956 - INFO - AI Response: {"words": ["PORT", "AMOR", "FLAME", "HOUSE", "LOVER", "CLOUDS", "FABLES", "DREAMS", "ROMANT", "HEARTS", "VACATION", "HOLIDAY", "LOVINGS", "ROMANCES"]}...
+2026-02-09 00:06:36,956 - WARNING - ✗ VALIDATION FAILED: Length mismatch. Required: {6: 4, 7: 2, 5: 4, 4: 2, 8: 2}, Got: {4: 2, 5: 3, 6: 5, 8: 2, 7: 2}
+2026-02-09 00:06:36,956 - INFO - 
+--- Attempt 5/6 ---
+2026-02-09 00:06:37,314 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-02-09 00:06:37,314 - INFO - AI Response: {"words": ["PORT", "AMOR", "FLAME", "HOUSE", "LOVER", "CLOUDS", "FABLES", "DREAMS", "HEARTS", "CITIES", "LAUGHT", "DANCER", "ROMANCES", "HOLIDAY"}}...
+2026-02-09 00:06:37,315 - WARNING - ✗ VALIDATION FAILED: Invalid JSON: Expecting ',' delimiter: line 1 column 146 (char 145)
+2026-02-09 00:06:37,315 - INFO - 
+--- Attempt 6/6 ---
+2026-02-09 00:06:37,606 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-02-09 00:06:37,607 - INFO - AI Response: {"words": ["PORT", "AMOR", "FLAME", "HOUSE", "LOVER", "CLOUDS", "FABLES", "DREAMS", "HEARTS", "CITIES", "LAUGHT", "DANCER", "ROMANCE", "HOLIDAY"]}...
+2026-02-09 00:06:37,607 - WARNING - ✗ VALIDATION FAILED: Length mismatch. Required: {6: 4, 7: 2, 5: 4, 4: 2, 8: 2}, Got: {4: 2, 5: 3, 6: 7, 7: 2}
+2026-02-09 00:06:37,607 - ERROR - 
+================================================================================
+2026-02-09 00:06:37,607 - ERROR - GENERATION FAILED - Page 1
+2026-02-09 00:06:37,607 - ERROR - Failed to generate valid words after 6 attempts
+2026-02-09 00:06:37,607 - ERROR - ================================================================================
+

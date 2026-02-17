@@ -1,0 +1,3 @@
+2026-02-08 23:31:00,045 - INFO - AI Word Generator initialized with model: llama-3.3-70b-versatile
+2026-02-08 23:31:00,045 - INFO - Session ID: 20260208_233100
+2026-02-08 23:31:00,045 - INFO - Log file: ai_logs\ai_generation_20260208_233059.log

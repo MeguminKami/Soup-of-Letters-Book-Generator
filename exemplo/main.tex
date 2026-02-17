@@ -1,0 +1,168 @@
+\documentclass[11pt,a4paper]{article}
+
+% "Packages"
+% ----------------------
+\usepackage{fontspec} % necessário para XeLaTeX
+\usepackage[portuguese]{babel}
+\usepackage[a5paper,margin=10mm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{tikz}
+\usepackage{fancyhdr}
+
+
+% ============================
+% Paleta 2 — Azul Petróleo + Laranja Queimado
+% \definecolor{corTitulo}{HTML}{264653} % Azul petróleo escuro
+% \definecolor{corListas}{HTML}{FF7B00} % Laranja queimado vibrante
+
+% ============================
+% Paleta 3 — Roxo Escuro + Verde Elétrico
+% \definecolor{corTitulo}{HTML}{3A0CA3} % Roxo profundo
+% \definecolor{corListas}{HTML}{2ECC71} % Verde esmeralda vivo
+
+% ============================
+% Paleta 4 — Bordeaux + Amarelo Solar
+% \definecolor{corTitulo}{HTML}{6A040F} % Bordeaux escuro
+% \definecolor{corListas}{HTML}{FFD60A} % Amarelo vibrante
+
+% ============================
+% Paleta 5 — Azul Royal Escuro + Verde Lima
+% \definecolor{corTitulo}{HTML}{00296B} % Azul royal profundo
+% \definecolor{corListas}{HTML}{9EF01A} % Verde lima vibrante
+
+% ============================
+% Paleta 6 — Roxo Vinho + Laranja Intenso
+% \definecolor{corTitulo}{HTML}{370617} % Roxo vinho escuro
+% \definecolor{corListas}{HTML}{FF8500} % Laranja intenso
+
+% ============================
+% Paleta 7 — Azul Profundo + Magenta
+% \definecolor{corTitulo}{HTML}{1D3557} % Azul profundo
+% \definecolor{corListas}{HTML}{F72585} % Magenta vibrante
+
+% ============================
+% Paleta 8 — Vermelho Escuro + Turquesa
+% \definecolor{corTitulo}{HTML}{780000} % Vermelho vinho escuro
+% \definecolor{corListas}{HTML}{00C4B3} % Turquesa vibrante
+
+% ============================
+% Paleta 9 — Roxo Escuro + Verde Vibrante
+% \definecolor{corTitulo}{HTML}{240046} % Roxo escuro
+% \definecolor{corListas}{HTML}{70E000} % Verde vivo
+
+% ============================
+% Paleta 10 — Azul Noturno + Coral
+% \definecolor{corTitulo}{HTML}{001D3D} % Azul noturno escuro
+% \definecolor{corListas}{HTML}{FF6F61} % Coral vibrante
+
+% ============================
+% Edição Especial — Azul Royal + Amarelo Mostarda
+% \definecolor{corTitulo}{HTML}{14213D} % Azul royal profundo
+% \definecolor{corListas}{HTML}{E3B505} % Mostarda vibrante
+
+% Edição Especial — Vinho + Amarelo Mostarda
+ \definecolor{corTitulo}{HTML}{5A0C18} % Vinho escuro
+ \definecolor{corListas}{HTML}{FFC300} % Mostarda vibrante
+
+
+% "Estilo"
+% ----------------------
+\definecolor{tema}{HTML}{E83E8C}
+\definecolor{cinza}{gray}{0.25}
+\setlength{\parindent}{0pt}
+\setlength{\tabcolsep}{1pt}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\addtolength{\footskip}{-10mm} 
+
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\newcommand{\cabecalho}{%
+  \textbf{Data:} \underline{\hspace{0.6cm}} /\,
+  \underline{\hspace{0.6cm}} /\,
+  \underline{\hspace{1.1cm}}
+  \hfill
+  \textbf{Vencedor:} \underline{\hspace{3cm}}\par\vspace{3mm}
+  \vspace{0.5cm}
+}
+\newcommand{\campotempo}{\textbf{Tempo: }\underline{\hspace{2.5cm}}}
+\newcommand{\SopaTopGap}{2mm}
+
+
+% "Grelhas: moldura e medição"
+% ----------------------
+\newsavebox{\GridBoxA}\newlength{\GridHeightA}
+\newsavebox{\GridBoxB}\newlength{\GridHeightB}
+\newcommand{\Moldura}[1]{%
+  \begin{tikzpicture}[baseline=(T.north)]
+    \node[inner sep=0pt, outer sep=0pt] (T) {#1};
+    \draw[line width=1pt] (T.south west) rectangle (T.north east);
+  \end{tikzpicture}%
+}
+\newcommand{\PrepararGrelhas}{%
+  \sbox{\GridBoxA}{\Moldura{\GridAcontent}}%
+  \setlength{\GridHeightA}{\dimexpr\ht\GridBoxA+\dp\GridBoxA\relax}%
+  \sbox{\GridBoxB}{\Moldura{\GridBcontent}}%
+  \setlength{\GridHeightB}{\dimexpr\ht\GridBoxB+\dp\GridBoxB\relax}%
+}
+
+% "Capa"
+% ----------------------
+\newcommand{\capa}{%
+  \thispagestyle{empty}
+  % Barras verticais
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[corListas] (current page.north west) rectangle ++(8mm,-\paperheight);
+    \fill[corListas] (current page.north east) rectangle ++(-8mm,-\paperheight);
+  \end{tikzpicture}
+
+  \begin{center}
+    \vspace*{5mm}
+    \textbf{\fontsize{40}{40}\selectfont\color{corTitulo} Batalhas de\\[3mm] Sopa de Letras} \\[3mm]
+    \large da Susana e do Manel \\ [20mm]
+    
+    \includegraphics[width=.64\linewidth]{capa.png}
+    \vfill
+    \vspace{3.3cm}
+    \small Feito com amor e para uma competição saudável
+  \end{center}
+
+  \vspace{\fill}
+
+  \newpage
+}
+
+% "Contra-Capa"
+% ----------------------
+\newcommand{\contracapa}{%
+  \thispagestyle{empty}
+  % Barras verticais
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[corListas] (current page.north west) rectangle ++(8mm,-\paperheight);
+    \fill[corListas] (current page.north east) rectangle ++(-8mm,-\paperheight);
+  \end{tikzpicture}
+
+  \vspace*{\fill}
+  \begin{center}
+    \small© 2025 João \& Sofs — Edição Especial
+  \end{center}
+
+  \newpage
+}
+
+\begin{document}
+
+\capa
+\contracapa
+\setcounter{page}{1}  
+\foreach \n in {1,...,30}{%
+  \include{\n}
+}
+\include{vitorias}
+
+\end{document}

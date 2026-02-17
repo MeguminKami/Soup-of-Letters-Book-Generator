@@ -1,0 +1,36 @@
+2026-02-09 00:32:11,179 - INFO - Gerador de Palavras IA inicializado com modelo Gemini: gemini-1.0-pro
+2026-02-09 00:32:11,179 - INFO - ID da Sessão: 20260209_003211
+2026-02-09 00:32:11,180 - INFO - Ficheiro de log: ai_logs\geracao_ia_20260209_003211.log
+2026-02-09 00:32:11,180 - INFO - 
+================================================================================
+2026-02-09 00:32:11,180 - INFO - A GERAR PALAVRAS - Página 1
+2026-02-09 00:32:11,180 - INFO - ================================================================================
+2026-02-09 00:32:11,180 - INFO - Necessário: 14 palavras
+2026-02-09 00:32:11,180 - INFO - Distribuição de comprimentos: Counter({5: 7, 4: 4, 6: 3})
+2026-02-09 00:32:11,180 - INFO - Temas: ['natureza', 'animais']
+2026-02-09 00:32:11,180 - INFO - Palavras já usadas: 0
+2026-02-09 00:32:11,180 - INFO - 
+--- Prompt Inicial ---
+2026-02-09 00:32:11,182 - INFO - Prompt: 
+És um gerador preciso de palavras para puzzles de sopa de letras. Gera APENAS JSON válido no formato exato solicitado. Regras:
+- Todas as palavras devem ser apenas letras ASCII maiúsculas (A-Z)
+- Sem espaços, hífens, acentos ou caracteres especiais
+- Usa apenas substantivos comuns (sem nomes própri...
+2026-02-09 00:32:11,182 - INFO - 
+--- Tentativa 1/6 ---
+2026-02-09 00:32:11,354 - ERROR - ✗ EXCEÇÃO: 404 models/gemini-1.0-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-02-09 00:32:11,354 - INFO - 
+--- Tentativa 2/6 ---
+2026-02-09 00:32:11,449 - ERROR - ✗ EXCEÇÃO: 404 models/gemini-1.0-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-02-09 00:32:11,450 - INFO - 
+--- Tentativa 3/6 ---
+2026-02-09 00:32:11,510 - ERROR - ✗ EXCEÇÃO: 404 models/gemini-1.0-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-02-09 00:32:11,511 - INFO - 
+--- Tentativa 4/6 ---
+2026-02-09 00:32:11,607 - ERROR - ✗ EXCEÇÃO: 404 models/gemini-1.0-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-02-09 00:32:11,608 - INFO - 
+--- Tentativa 5/6 ---
+2026-02-09 00:32:11,669 - ERROR - ✗ EXCEÇÃO: 404 models/gemini-1.0-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2026-02-09 00:32:11,670 - INFO - 
+--- Tentativa 6/6 ---
+2026-02-09 00:32:11,756 - ERROR - ✗ EXCEÇÃO: 404 models/gemini-1.0-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.

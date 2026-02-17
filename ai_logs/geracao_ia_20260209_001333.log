@@ -1,0 +1,58 @@
+2026-02-09 00:13:34,260 - INFO - Gerador de Palavras IA inicializado com modelo: llama-3.3-70b-versatile
+2026-02-09 00:13:34,260 - INFO - ID da Sessão: 20260209_001334
+2026-02-09 00:13:34,260 - INFO - Ficheiro de log: ai_logs\geracao_ia_20260209_001333.log
+2026-02-09 00:13:34,261 - INFO - 
+================================================================================
+2026-02-09 00:13:34,261 - INFO - A GERAR PALAVRAS - Página 1
+2026-02-09 00:13:34,261 - INFO - ================================================================================
+2026-02-09 00:13:34,261 - INFO - Necessário: 14 palavras
+2026-02-09 00:13:34,262 - INFO - Distribuição de comprimentos: Counter({5: 4, 6: 4, 7: 2, 8: 2, 4: 2})
+2026-02-09 00:13:34,262 - INFO - Temas: ['paris', 'amor', 'viajar']
+2026-02-09 00:13:34,262 - INFO - Palavras já usadas: 0
+2026-02-09 00:13:34,262 - INFO - 
+--- Prompt Inicial ---
+2026-02-09 00:13:34,262 - INFO - Sistema: És um gerador preciso de palavras para puzzles de sopa de letras. Gera APENAS JSON válido no formato exato solicitado. Regras:
+- Todas as palavras devem ser apenas letras ASCII maiúsculas (A-Z)
+- Sem ...
+2026-02-09 00:13:34,263 - INFO - Utilizador: Gera exatamente 14 palavras únicas com os temas: paris, amor, viajar.
+Requisitos de comprimento: 2 palavras com 4 letras, 4 palavras com 5 letras, 4 palavras com 6 letras, 2 palavras com 7 letras, 2 palavras com 8 letras.
+Palavras usadas anteriormente a evitar: nenhuma.
+
+Formato de saída:
+{"palavras...
+2026-02-09 00:13:34,263 - INFO - 
+--- Tentativa 1/6 ---
+2026-02-09 00:13:35,150 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-02-09 00:13:35,155 - INFO - Resposta da IA: {"palavras": ["AMOR", "VIAS", "TORRE", "AMAVA", "VIAGA", "PARIS", "VIADOS", "AMORES", "VIAGEM", "VIANDO", "VIAGENS", "VIATORE", "VIATOES", "VIAGENS"]}...
+2026-02-09 00:13:35,155 - WARNING - ✗ VALIDAÇÃO FALHOU: Palavra duplicada no lote: 'VIAGENS'
+2026-02-09 00:13:35,156 - INFO - 
+--- Tentativa 2/6 ---
+2026-02-09 00:13:35,492 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-02-09 00:13:35,493 - INFO - Resposta da IA: {"palavras": ["AMOR", "VIAS", "TORRE", "AMAVA", "VIAGA", "PARIS", "VIADOS", "AMORES", "VIAGEM", "VIANDO", "ROMANT", "VIATOES", "VIAGENS", "VOYAGER"]}...
+2026-02-09 00:13:35,493 - WARNING - ✗ VALIDAÇÃO FALHOU: Incompatibilidade de comprimentos. Requerido: {5: 4, 7: 2, 8: 2, 6: 4, 4: 2}, Obtido: {4: 2, 5: 4, 6: 5, 7: 3}
+2026-02-09 00:13:35,493 - INFO - 
+--- Tentativa 3/6 ---
+2026-02-09 00:13:35,806 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-02-09 00:13:35,807 - INFO - Resposta da IA: {"palavras": ["AMOR", "VIAS", "TORRE", "AMAVA", "VIAGA", "PARISE", "VIADOS", "AMORES", "VIAGEM", "VIANDO", "ROMANT", "VIAGENS", "VOYAGER", "VIATORES"]}...
+2026-02-09 00:13:35,807 - WARNING - ✗ VALIDAÇÃO FALHOU: Incompatibilidade de comprimentos. Requerido: {5: 4, 7: 2, 8: 2, 6: 4, 4: 2}, Obtido: {4: 2, 5: 3, 6: 6, 7: 2, 8: 1}
+2026-02-09 00:13:35,807 - INFO - 
+--- Tentativa 4/6 ---
+2026-02-09 00:13:36,163 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-02-09 00:13:36,164 - INFO - Resposta da IA: {"palavras": ["AMOR", "VIAS", "TORRE", "AMAVA", "VIAGA", "PARISE", "VIADOS", "AMORES", "VIAGEM", "ROMANT", "VIANDO", "VOYAGE", "VIATORE", "VIAGENS"]}...
+2026-02-09 00:13:36,164 - WARNING - ✗ VALIDAÇÃO FALHOU: Incompatibilidade de comprimentos. Requerido: {5: 4, 7: 2, 8: 2, 6: 4, 4: 2}, Obtido: {4: 2, 5: 3, 6: 7, 7: 2}
+2026-02-09 00:13:36,164 - INFO - 
+--- Tentativa 5/6 ---
+2026-02-09 00:13:36,530 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-02-09 00:13:36,531 - INFO - Resposta da IA: {"palavras": ["AMOR", "VIAS", "AMAVA", "VIAGA", "TORRE", "VIADOS", "AMORES", "VIAGEM", "ROMANT", "PARISE", "VOYAGER", "VIAGENS", "VIATORE", "AMOREIS"]}...
+2026-02-09 00:13:36,531 - WARNING - ✗ VALIDAÇÃO FALHOU: Incompatibilidade de comprimentos. Requerido: {5: 4, 7: 2, 8: 2, 6: 4, 4: 2}, Obtido: {4: 2, 5: 3, 6: 5, 7: 4}
+2026-02-09 00:13:36,531 - INFO - 
+--- Tentativa 6/6 ---
+2026-02-09 00:13:36,847 - INFO - HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+2026-02-09 00:13:36,848 - INFO - Resposta da IA: {"palavras": ["AMOR", "VIAS", "AMAVA", "VIAGA", "TORRE", "VIADOS", "AMORES", "VIAGEM", "ROMANT", "PARISE", "VOYAGEs", "VIAGENS", "VIATORE", "AMORAND"]}...
+2026-02-09 00:13:36,848 - WARNING - ✗ VALIDAÇÃO FALHOU: Incompatibilidade de comprimentos. Requerido: {5: 4, 7: 2, 8: 2, 6: 4, 4: 2}, Obtido: {4: 2, 5: 3, 6: 5, 7: 4}
+2026-02-09 00:13:36,848 - ERROR - 
+================================================================================
+2026-02-09 00:13:36,848 - ERROR - GERAÇÃO FALHOU - Página 1
+2026-02-09 00:13:36,848 - ERROR - Falha ao gerar palavras válidas após 6 tentativas
+2026-02-09 00:13:36,848 - ERROR - ================================================================================
+
