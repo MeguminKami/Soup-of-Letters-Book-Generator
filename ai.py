@@ -53,7 +53,7 @@ class GeradorPalavrasIA:
         # Determinar chave API
         if chave_api is None:
             # Usar chave fornecida ou variável de ambiente
-            chave_api = os.getenv("GEMINI_API_KEY") or "AIzaSyBpqJJsyGk2s8BGRhtnB5w0f7Y27azHHE0"
+            chave_api = os.getenv("GEMINI_API_KEY") or "x"
 
         if not chave_api:
             raise RuntimeError(
