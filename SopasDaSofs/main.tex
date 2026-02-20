@@ -12,11 +12,6 @@
 \usepackage[table]{xcolor}
 
 % ============================
-% Main color pair (active)
-\definecolor{corTitulo}{HTML}{3A0CA3}
-\definecolor{corListas}{HTML}{2ECC71}
-
-% ============================
 % Alternative pairs (comment/uncomment)
 % \definecolor{corTitulo}{HTML}{063049}
 % \definecolor{corListas}{HTML}{AACD6C}
@@ -33,8 +28,8 @@
 % \definecolor{corTitulo}{HTML}{370617}
 % \definecolor{corListas}{HTML}{FF8500}
 
-% \definecolor{corTitulo}{HTML}{1D3557}
-% \definecolor{corListas}{HTML}{F72585}
+ \definecolor{corTitulo}{HTML}{FF2929}
+ \definecolor{corListas}{HTML}{4358E0}
 
 % \definecolor{corTitulo}{HTML}{780000}
 % \definecolor{corListas}{HTML}{00C4B3}
@@ -56,6 +51,8 @@
 
 % \definecolor{corTitulo}{HTML}{1B4332}
 % \definecolor{corListas}{HTML}{F9C74F}
+
+
 
 % Difficulty colors
 \definecolor{difficultyEasy}{HTML}{1B5E20}
@@ -122,7 +119,7 @@
   \setlength{\GridHeightA}{\dimexpr\ht\GridBoxA+\dp\GridBoxA\relax}%
 }
 
-\graphicspath{{extras/}}
+\graphicspath{{../extras/}{extras/}}
 
 \newcommand{\CoverPage}{%
   \thispagestyle{empty}
@@ -132,13 +129,13 @@
   \end{tikzpicture}
   \begin{center}
     \vspace*{4mm}
-    {\fontsize{28}{30}\selectfont\bfseries\color{corTitulo} Batalhas de\\[2mm]Sopa de Letras\par}
+    {\fontsize{28}{30}\selectfont\bfseries\color{corTitulo} Sopas de Letras\\[2mm]da Sofs\par}
     \vspace{4mm}
-    {\normalsize Livro de Jogos\par}
+    {\normalsize Livro de treino para as batalhas\par}
     \vspace{7mm}
     \includegraphics[width=.62\linewidth]{capa.png}
     \vfill
-    {\small Feito para competicao divertida e treino mental}
+    {\small Feito com amor pelo teu João}
   \end{center}
   \newpage
 }
@@ -151,15 +148,15 @@
   \end{tikzpicture}
   \vspace*{\fill}
   \begin{center}
-    {\small Edicao personalizada}
+    {\small \copyright\ 2025 João \& Sofs — 2 \textordfeminine\ Edição Individual}
   \end{center}
   \newpage
 }
 
 % ============================
 % Book settings (manual in each copied main.tex)
-\newcommand{\BookFolder}{book_pages}
-\newcommand{\TotalPages}{30}
+\newcommand{\BookFolder}{.}
+\newcommand{\TotalPages}{0}
 
 % Toggle extra pages
 \newif\ifincludecover
@@ -181,11 +178,11 @@
 
 \setcounter{page}{1}
 \foreach \n in {1,...,\TotalPages}{%
-  \IfFileExists{\BookFolder/\n.tex}{\input{\BookFolder/\n.tex}}{}
+  % \IfFileExists{\BookFolder/\n.tex}{\input{\BookFolder/\n.tex}}{}
 }
 
 \ifincludevictorypage
-  \input{extras/vitorias.tex}
+  \IfFileExists{../extras/vitorias.tex}{\input{../extras/vitorias.tex}}{}
 \fi
 
 \end{document}

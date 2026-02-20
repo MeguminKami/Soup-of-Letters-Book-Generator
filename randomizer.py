@@ -103,7 +103,7 @@ def main():
 
     print(f"Found {len(files)} numbered .tex files in: {folder}")
     # Options:
-    DRY_RUN = True          # change to False to actually rename
+    DRY_RUN = False          # change to False to actually rename
     SEED = None             # set e.g. 123 for repeatable shuffles
 
     mapping = shuffle_renames(files, seed=SEED)

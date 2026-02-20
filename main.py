@@ -5,6 +5,7 @@ import os
 import random
 import re
 import unicodedata
+from abc import ABC, abstractmethod
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,11 +19,7 @@ except ImportError:
 try:
     from colorama import Fore, Back, Style, init as colorama_init
     colorama_init(autoreset=True)
-    HAS_COLORAMA = True
 except ImportError:
-    HAS_COLORAMA = False
-    colorama_init = None  # type: ignore
-    # Fallback to empty strings if colorama is not available
     class _DummyColor:
         def __getattr__(self, name):
             return ""
@@ -36,11 +33,11 @@ BASE_LENGTH_RATIO: Dict[int, int] = {4: 2, 5: 4, 6: 4, 7: 2, 8: 2}
 SUPPORTED_LENGTHS = tuple(sorted(BASE_LENGTH_RATIO.keys()))
 GRID_STYLE_BY_COLS: Dict[int, Tuple[float, str, float]] = {
     11: (0.62, r"\Large", 1.18),
-    12: (0.56, r"\large", 1.14),  # Type F - tall format (now 30x12)
-    14: (0.50, r"\large", 1.12),  # Type E - battle format (14x14)
-    15: (0.50, r"\large", 1.12),  # Reserved
+    12: (0.56, r"\large", 1.14),
+    14: (0.50, r"\large", 1.12),
+    15: (0.50, r"\large", 1.12),
     17: (0.46, r"\normalsize", 1.10),
-    20: (0.52, r"\large", 1.15),  # Type D - larger cells and spacing
+    20: (0.52, r"\large", 1.15),
     26: (0.39, r"\footnotesize", 1.02),
 }
 FOLDER_NAME_PATTERN = re.compile(r"^[A-Za-z0-9._\\/-]+$")
@@ -50,14 +47,25 @@ NAV_BACK = "__BACK__"
 NAV_QUIT = "__QUIT__"
 
 
-# Terminal Display Functions
+def normalize_word(word: str) -> str:
+    upper = word.strip().upper()
+    nfd = unicodedata.normalize("NFD", upper)
+    return "".join(ch for ch in nfd if unicodedata.category(ch) != "Mn")
+
+
+def stem_tokens_for_word(word: str) -> Set[str]:
+    return {normalize_word(word)}
+
+
+def has_stem_conflict(word: str, used_tokens: Set[str]) -> bool:
+    return bool(stem_tokens_for_word(word) & used_tokens)
+
+
 def clear_screen() -> None:
-    """Clear the terminal screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
 def print_header(text: str) -> None:
-    """Print a formatted header with colors."""
     width = 70
     print(f"\n{Fore.CYAN}{Style.BRIGHT}{'═' * width}")
     print(f"{text.center(width)}")
@@ -65,18 +73,15 @@ def print_header(text: str) -> None:
 
 
 def print_section(text: str) -> None:
-    """Print a section title."""
     print(f"\n{Fore.YELLOW}{Style.BRIGHT}▶ {text}{Style.RESET_ALL}")
     print(f"{Fore.YELLOW}{'─' * 70}{Style.RESET_ALL}")
 
 
 def print_box(lines: List[str], color: str = Fore.WHITE) -> None:
-    """Print text in a box."""
     if not lines:
         return
     max_len = max(len(line) for line in lines)
     width = max_len + 4
-
     print(f"{color}┌{'─' * (width - 2)}┐")
     for line in lines:
         padding = max_len - len(line)
@@ -85,22 +90,18 @@ def print_box(lines: List[str], color: str = Fore.WHITE) -> None:
 
 
 def print_success(text: str) -> None:
-    """Print success message."""
     print(f"{Fore.GREEN}{Style.BRIGHT}✓ {text}{Style.RESET_ALL}")
 
 
 def print_error(text: str) -> None:
-    """Print error message."""
     print(f"{Fore.RED}{Style.BRIGHT}✗ {text}{Style.RESET_ALL}")
 
 
 def print_info(text: str) -> None:
-    """Print info message."""
     print(f"{Fore.CYAN}ℹ {text}{Style.RESET_ALL}")
 
 
 def print_warning(text: str) -> None:
-    """Print warning message."""
     print(f"{Fore.YELLOW}⚠ {text}{Style.RESET_ALL}")
 
 
@@ -113,16 +114,17 @@ class DifficultyConfig:
 
 
 DIFFICULTIES: Dict[str, DifficultyConfig] = {
-    "1": DifficultyConfig(key="easy", label="Fácil", color_macro="difficultyEasy", bonus=0),
-    "2": DifficultyConfig(key="medium", label="Médio", color_macro="difficultyMedium", bonus=1),
-    "3": DifficultyConfig(key="hard", label="Dificil", color_macro="difficultyHard", bonus=3),
+    "1": DifficultyConfig(key="easy",       label="Fácil",      color_macro="difficultyEasy",      bonus=0),
+    "2": DifficultyConfig(key="medium",     label="Médio",      color_macro="difficultyMedium",    bonus=1),
+    "3": DifficultyConfig(key="hard",       label="Difícil",    color_macro="difficultyHard",      bonus=3),
     "4": DifficultyConfig(key="super_hard", label="Impossível", color_macro="difficultySuperHard", bonus=5),
 }
 
 
-class WordProvider:
+class WordProvider(ABC):
+    @abstractmethod
     def sample_words(self, length_plan: Sequence[int], used_tokens: Set[str], used_words: Sequence[str]) -> List[str]:
-        raise NotImplementedError
+        ...
 
 
 class JsonWordProvider(WordProvider):
@@ -163,60 +165,25 @@ class AIWordProvider(WordProvider):
     def __init__(self, themes: Sequence[str], rng: random.Random):
         self._themes = list(themes)
         self._rng = rng
-        # Import and initialize the AI generator
         try:
             from ai import GeradorPalavrasIA
             self._generator = GeradorPalavrasIA()
         except ImportError:
             raise RuntimeError("Modo IA requer o módulo ai.py com a classe GeradorPalavrasIA")
-
         self._page_counter = 0
 
     def sample_words(self, length_plan: Sequence[int], used_tokens: Set[str], used_words: Sequence[str]) -> List[str]:
         self._page_counter += 1
-
-        # Convert used_words to set for faster lookup and include all used tokens
         all_used = set(used_words) | used_tokens
-
-        # Call the AI generator with proper parameters
         words = self._generator.gerar_palavras(
             quantidade=len(length_plan),
             plano_comprimentos=list(length_plan),
             temas=self._themes,
             palavras_usadas=all_used,
-            numero_pagina=self._page_counter
+            numero_pagina=self._page_counter,
         )
-
-        # Shuffle for variety
         self._rng.shuffle(words)
         return words
-
-
-
-
-# Old AI helper functions - now handled in ai.py module
-# These are kept commented for reference but no longer used
-
-# def build_ai_client():
-#     ...existing code...
-
-# def strip_code_fences(text: str) -> str:
-#     ...existing code...
-
-# def extract_json_payload(text: str) -> str:
-#     ...existing code...
-
-# def parse_and_validate_ai_words(...):
-#     ...existing code...
-
-# def normalize_word(raw_word: str) -> str:
-#     ...existing code...
-
-# def stem_tokens_for_word(word: str) -> Set[str]:
-#     ...existing code...
-
-# def has_stem_conflict(word: str, used_tokens: Set[str]) -> bool:
-#     ...existing code...
 
 
 def load_word_pools(palavras_dir: Path) -> Dict[int, List[str]]:
@@ -320,7 +287,6 @@ def build_fill_tickets(words: Sequence[str], difficulty_bonus: int) -> Dict[str,
     for word in words:
         for char in word:
             tickets[char] = tickets.get(char, 1) + increment
-
     for vowel in "AEIOU":
         tickets[vowel] = max(1, round(tickets[vowel] * 0.6))
     return tickets
@@ -387,30 +353,27 @@ def indent_block(text: str, prefix: str) -> str:
 
 def render_grid_tabular(grid: Sequence[Sequence[str]]) -> str:
     cols = len(grid[0])
-    # Use consistent formatting for battle pages (11 and 14 cols)
     if cols == 11 or cols == 14:
         cell_width = 0.48 if cols == 11 else 0.44
         lines = [
             r"\renewcommand{\arraystretch}{1.12}%",
-            "\\begin{tabular}{*{%d}{C{%.2fcm}}}" % (cols, cell_width),
+            "\\begin{tabular}{@{}*{%d}{C{%.2fcm}}@{}}" % (cols, cell_width),
         ]
     elif cols == 20:
-        # Type D - larger cells, more spacing
         cell_width = 0.52
         lines = [
             r"\renewcommand{\arraystretch}{1.15}",
             r"\setlength{\tabcolsep}{1.5pt}",
             r"\large",
-            "\\begin{tabular}{*{%d}{C{%.2fcm}}}" % (cols, cell_width),
+            "\\begin{tabular}{@{}*{%d}{C{%.2fcm}}@{}}" % (cols, cell_width),
         ]
     else:
-        # For other grid sizes, use original logic
         cell_width, font_cmd, row_stretch = GRID_STYLE_BY_COLS.get(cols, (0.30, r"\normalsize", 1.10))
         lines = [
             rf"\renewcommand{{\arraystretch}}{{{row_stretch:.2f}}}",
             r"\setlength{\tabcolsep}{1pt}",
             font_cmd,
-            "\\begin{tabular}{*{%d}{C{%.2fcm}}}" % (cols, cell_width),
+            "\\begin{tabular}{@{}*{%d}{C{%.2fcm}}@{}}" % (cols, cell_width),
         ]
 
     for row in grid:
@@ -419,29 +382,34 @@ def render_grid_tabular(grid: Sequence[Sequence[str]]) -> str:
     return "\n".join(lines)
 
 
+def render_single_grid_preamble(grid: Sequence[Sequence[str]]) -> str:
+    grid_a_tabular = render_grid_tabular(grid)
+    lines = [
+        r"\newcommand{\GridAcontent}{%",
+        indent_block(grid_a_tabular, "  ") + "%",
+        r"}",
+        r"\PrepararGrelhaA",
+    ]
+    return "\n".join(lines)
+
+
 def render_grid_box(grid: Sequence[Sequence[str]], grid_id: str = "") -> str:
-    """Render grid. For battle pages, returns just the reference; content is in GridAcontent/GridBcontent."""
-    if grid_id:
-        # For battle pages, just return the usebox reference
-        return f"\\usebox{{\\GridBox{grid_id}}}"
-    else:
-        # For single puzzle pages, return the full framed grid
-        tabular = render_grid_tabular(grid)
-        return "\\PuzzleFrame{%\n" + indent_block(tabular, "  ") + "\n}"
+    grid_label = grid_id if grid_id else "A"
+    return "\n".join([
+        f"\\begin{{minipage}}[t][\\GridHeight{grid_label}][t]{{\\linewidth}}",
+        r"  \centering",
+        f"  \\usebox{{\\GridBox{grid_label}}}",
+        r"\end{minipage}",
+    ])
 
 
 def render_two_column_word_table(words: Sequence[str]) -> str:
-    # Sort by length (decreasing), then alphabetically
     sorted_words = sorted(words, key=lambda w: (-len(w), w))
-
     split = (len(sorted_words) + 1) // 2
     left = list(sorted_words[:split])
     right = list(sorted_words[split:])
     right.extend([""] * (len(left) - len(right)))
-
-    lines = [
-        r"\begin{tabular}{@{}p{.48\linewidth} p{.48\linewidth}@{}}",
-    ]
+    lines = [r"\begin{tabular}{@{}p{.48\linewidth} p{.48\linewidth}@{}}"]
     for index in range(len(left)):
         lines.append(f"    {left[index]} & {right[index]} \\\\")
     lines.append(r"  \end{tabular}")
@@ -449,9 +417,7 @@ def render_two_column_word_table(words: Sequence[str]) -> str:
 
 
 def render_vertical_word_table(words: Sequence[str]) -> str:
-    # Sort by length (decreasing), then alphabetically
     sorted_words = sorted(words, key=lambda w: (-len(w), w))
-
     lines = [
         r"\renewcommand{\arraystretch}{1.58}",
         r"\begin{tabular}{@{}l@{}}",
@@ -463,14 +429,11 @@ def render_vertical_word_table(words: Sequence[str]) -> str:
 
 
 def render_three_column_word_table(words: Sequence[str], rows_per_col: int = 9) -> str:
-    # Sort by length (decreasing), then alphabetically
     sorted_words = sorted(words, key=lambda w: (-len(w), w))
-
     columns: List[List[str]] = []
     for col_index in range(3):
         start = col_index * rows_per_col
         columns.append(list(sorted_words[start : start + rows_per_col]))
-
     lines = [
         r"\renewcommand{\arraystretch}{1.58}",
         r"\setlength{\tabcolsep}{2.4mm}",
@@ -486,14 +449,11 @@ def render_three_column_word_table(words: Sequence[str], rows_per_col: int = 9) 
 
 
 def render_six_column_word_table(words: Sequence[str], rows_per_col: int = 5) -> str:
-    # Sort by length (decreasing), then alphabetically
     sorted_words = sorted(words, key=lambda w: (-len(w), w))
-
     columns: List[List[str]] = []
     for col_index in range(6):
         start = col_index * rows_per_col
         columns.append(list(sorted_words[start : start + rows_per_col]))
-
     lines = [
         r"\renewcommand{\arraystretch}{1.58}",
         r"\setlength{\tabcolsep}{1.8mm}",
@@ -522,12 +482,7 @@ def render_battle_word_panel(words: Sequence[str], include_time: bool, grid_heig
         r"  }",
     ]
     if include_time:
-        lines.extend([
-            r"  \\ \ \\",
-            r"  \\ \ \\",
-            r"  \campotempo",
-            r"  \vfill"
-        ])
+        lines.extend([r"  \\ \ \\", r"  \\ \ \\", r"  \campotempo", r"  \vfill"])
     else:
         lines.append(r"  \vfill")
     lines.append(r"\end{minipage}")
@@ -536,25 +491,22 @@ def render_battle_word_panel(words: Sequence[str], include_time: bool, grid_heig
 
 def render_side_word_panel(words: Sequence[str]) -> str:
     table = render_vertical_word_table(words)
-    lines = [
+    return "\n".join([
         r"\begin{minipage}[t]{\linewidth}",
         r"  \vspace*{0pt}",
         indent_block(table, "  "),
         r"\end{minipage}",
-    ]
-    return "\n".join(lines)
+    ])
 
 
 def render_top_bottom_word_panel(words: Sequence[str]) -> str:
-    # Use 6 columns with ~5 rows per column for 27 words
     table = render_six_column_word_table(words, rows_per_col=5)
-    lines = [
+    return "\n".join([
         r"\begin{minipage}[t]{\linewidth}",
         r"  \centering",
         indent_block(table, "  "),
         r"\end{minipage}",
-    ]
-    return "\n".join(lines)
+    ])
 
 
 def render_battle_page(
@@ -565,7 +517,6 @@ def render_battle_page(
     difficulty: DifficultyConfig,
     with_details: bool,
 ) -> str:
-    # Render grid content as newcommands
     grid_a_tabular = render_grid_tabular(grid_a)
     grid_b_tabular = render_grid_tabular(grid_b)
 
@@ -579,12 +530,9 @@ def render_battle_page(
         r"",
     ]
 
-    # Add header
     if with_details:
-        # Type A: cabecalho (date/winner) + page number at bottom right
         lines.append(r"\cabecalho")
     else:
-        # Type B: date at top left, page number at top right
         lines.extend([
             r"\noindent",
             r"\begin{tabular*}{\linewidth}{@{}l@{\extracolsep{\fill}}r@{}}",
@@ -599,10 +547,9 @@ def render_battle_page(
         r"\vspace{\SopaTopGap}",
         r"",
         r"\noindent",
-        r"\begin{tabular}[t]{@{}p{0.44\linewidth}@{\hspace{2mm}}p{0.54\linewidth}@{}}",
+        r"\begin{tabular}[t]{@{}>{\noindent\ignorespaces}p{0.44\linewidth}@{\hspace{2mm}}>{\noindent\ignorespaces}p{0.54\linewidth}@{}}",
     ])
 
-    # First puzzle (words on left, grid on right)
     words_panel_a = render_battle_word_panel(words_a, include_time=with_details, grid_height="A")
     lines.extend([
         words_panel_a,
@@ -617,11 +564,10 @@ def render_battle_page(
         r"",
     ])
 
-    # Second puzzle (grid on left, words on right)
     words_panel_b = render_battle_word_panel(words_b, include_time=with_details, grid_height="B")
     lines.extend([
         r"\noindent",
-        r"\begin{tabular}[t]{@{}p{0.54\linewidth}@{\hspace{2mm}}p{0.44\linewidth}@{}}",
+        r"\begin{tabular}[t]{@{}>{\noindent\ignorespaces}p{0.54\linewidth}@{\hspace{2mm}}>{\noindent\ignorespaces}p{0.44\linewidth}@{}}",
         r"\begin{minipage}[t][\GridHeightB][t]{\linewidth}",
         r"  \centering",
         r"  \usebox{\GridBoxB}",
@@ -633,16 +579,10 @@ def render_battle_page(
         r"\vfill",
     ])
 
-    # Add page number at bottom right for Type A
     if with_details:
-        lines.extend([
-            r"\noindent",
-            r"\hfill\thepage",
-            r"",
-        ])
+        lines.extend([r"\noindent", r"\hfill\thepage", r""])
 
     lines.append(r"\newpage")
-
     return "\n".join(lines) + "\n"
 
 
@@ -655,11 +595,12 @@ def render_type_c_page(
     ordered_words = sorted(words, key=lambda word: (-len(word), word))
     words_panel = render_side_word_panel(ordered_words)
     grid_panel = render_grid_box(grid)
-
     left_block = grid_panel if grid_on_left else words_panel
     right_block = words_panel if grid_on_left else grid_panel
 
     lines = [
+        render_single_grid_preamble(grid),
+        r"",
         r"\noindent",
         r"\begin{tabular*}{\linewidth}{@{}l@{\extracolsep{\fill}}r@{}}",
         r"\textbf{Data:} \underline{\hspace{0.6cm}} /\, \underline{\hspace{0.6cm}} /\, \underline{\hspace{1.1cm}}",
@@ -667,7 +608,7 @@ def render_type_c_page(
         r"\end{tabular*}",
         r"\vspace{3mm}",
         r"",
-        r"\begin{tabular}[t]{@{}p{0.74\linewidth}@{\hspace{2mm}}p{0.24\linewidth}@{}}",
+        r"\begin{tabular}[t]{@{}>{\noindent\ignorespaces}p{0.74\linewidth}@{\hspace{2mm}}>{\noindent\ignorespaces}p{0.24\linewidth}@{}}",
         indent_block(left_block, "  "),
         r"  &",
         indent_block(right_block, "  "),
@@ -688,6 +629,8 @@ def render_type_d_page(
     grid_panel = render_grid_box(grid)
 
     lines: List[str] = [
+        render_single_grid_preamble(grid),
+        r"",
         r"\noindent",
         r"\begin{tabular*}{\linewidth}{@{}l@{\extracolsep{\fill}}r@{}}",
         r"\textbf{Data:} \underline{\hspace{0.6cm}} /\, \underline{\hspace{0.6cm}} /\, \underline{\hspace{1.1cm}}",
@@ -697,44 +640,36 @@ def render_type_d_page(
         r"",
     ]
     if words_on_top:
-        lines.extend(
-            [
-                r"\vspace{2mm}",
-                words_panel,
-                r"\vspace{5mm}",
-                r"\begin{center}",
-                grid_panel,
-                r"\end{center}",
-                r"\vfill",
-            ]
-        )
+        lines.extend([
+            r"\vspace{2mm}",
+            words_panel,
+            r"\vspace{5mm}",
+            r"\begin{center}",
+            grid_panel,
+            r"\end{center}",
+            r"\vfill",
+        ])
     else:
-        lines.extend(
-            [
-                r"\vspace{2mm}",
-                r"\begin{center}",
-                grid_panel,
-                r"\end{center}",
-                r"\vspace{5mm}",
-                words_panel,
-                r"\vfill",
-            ]
-        )
+        lines.extend([
+            r"\vspace{2mm}",
+            r"\begin{center}",
+            grid_panel,
+            r"\end{center}",
+            r"\vspace{5mm}",
+            words_panel,
+            r"\vfill",
+        ])
     lines.append(r"\newpage")
     return "\n".join(lines) + "\n"
 
 
 def render_four_column_word_table(words: Sequence[str]) -> str:
-    """Render words in 4 columns for Type E."""
-    # Sort by length (decreasing), then alphabetically
     sorted_words = sorted(words, key=lambda w: (-len(w), w))
-
     rows_per_col = (len(sorted_words) + 3) // 4
     columns: List[List[str]] = []
     for col_index in range(4):
         start = col_index * rows_per_col
         columns.append(list(sorted_words[start : start + rows_per_col]))
-
     lines = [
         r"\renewcommand{\arraystretch}{1.5}",
         r"\setlength{\tabcolsep}{2mm}",
@@ -760,8 +695,6 @@ def render_type_e_page(
     words_b: Sequence[str],
     difficulty: DifficultyConfig,
 ) -> str:
-    """Type E: Battle format like Type B but with 16 words each (14+2) and 14 cols (11+3)."""
-    # Render grid content as newcommands
     grid_a_tabular = render_grid_tabular(grid_a)
     grid_b_tabular = render_grid_tabular(grid_b)
 
@@ -784,10 +717,9 @@ def render_type_e_page(
         r"\vspace{\SopaTopGap}",
         r"",
         r"\noindent",
-        r"\begin{tabular}[t]{@{}p{0.44\linewidth}@{\hspace{2mm}}p{0.54\linewidth}@{}}",
+        r"\begin{tabular}[t]{@{}>{\noindent\ignorespaces}p{0.44\linewidth}@{\hspace{2mm}}>{\noindent\ignorespaces}p{0.54\linewidth}@{}}",
     ]
 
-    # First puzzle (words on left, grid on right) - no campotempo
     words_panel_a = render_battle_word_panel(words_a, include_time=False, grid_height="A")
     lines.extend([
         words_panel_a,
@@ -802,17 +734,16 @@ def render_type_e_page(
         r"",
     ])
 
-    # Second puzzle (grid on left, words on right) - no campotempo
     words_panel_b = render_battle_word_panel(words_b, include_time=False, grid_height="B")
     lines.extend([
         r"\noindent",
-        r"\begin{tabular}[t]{@{}p{0.54\linewidth}@{\hspace{2mm}}p{0.44\linewidth}@{}}",
+        r"\begin{tabular}[t]{@{}>{\noindent\ignorespaces}p{0.54\linewidth}@{\hspace{2mm}}>{\noindent\ignorespaces}p{0.44\linewidth}@{}}",
         r"\begin{minipage}[t][\GridHeightB][t]{\linewidth}",
         r"  \centering",
         r"  \usebox{\GridBoxB}",
         r"\end{minipage}",
         r"&",
-        r"\hspace{8mm}" + words_panel_b + "\\",  # Offset words to the right
+        r"\hspace{8mm}" + words_panel_b + "\\",
         r"\end{tabular}",
         r"",
         r"\vfill",
@@ -827,12 +758,12 @@ def render_type_f_page(
     words: Sequence[str],
     difficulty: DifficultyConfig,
 ) -> str:
-    """Type F: Tall format (30x12) with 22 words on the side."""
-    # Words are already sorted by caller
     words_panel = render_side_word_panel(words)
     grid_panel = render_grid_box(grid)
 
     lines = [
+        render_single_grid_preamble(grid),
+        r"",
         r"\noindent",
         r"\begin{tabular*}{\linewidth}{@{}l@{\extracolsep{\fill}}r@{}}",
         r"\textbf{Data:} \underline{\hspace{0.6cm}} /\, \underline{\hspace{0.6cm}} /\, \underline{\hspace{1.1cm}}",
@@ -840,12 +771,9 @@ def render_type_f_page(
         r"\end{tabular*}",
         r"\vspace{3mm}",
         r"",
-        r"\begin{tabular}[t]{@{}p{0.68\linewidth}@{\hspace{3mm}}p{0.29\linewidth}@{}}",
-        r"\begin{minipage}[t]{\linewidth}",
-        r"  \centering",
+        r"\begin{tabular}[t]{@{}>{\noindent\ignorespaces}p{0.68\linewidth}@{\hspace{3mm}}>{\noindent\ignorespaces}p{0.29\linewidth}@{}}",
         indent_block(grid_panel, "  "),
-        r"\end{minipage}",
-        r"&",
+        r"  &",
         indent_block(words_panel, ""),
         r"\\",
         r"\end{tabular}",
@@ -871,44 +799,37 @@ def ask_choice(
     allow_quit: bool = False,
 ) -> str:
     print_section(title)
-
-    # Display regular options
     for key, description in options:
         print(f"  {Fore.GREEN}{Style.BRIGHT}{key}{Style.RESET_ALL}) {description}")
 
-    # Add Back as last numbered option if needed
     if allow_back:
-        # Find the next available number
         existing_keys = [key for key, _ in options]
         next_num = str(len(existing_keys) + 1)
-        print(f"  {Fore.YELLOW}{Style.BRIGHT}{next_num}{Style.RESET_ALL}) ← Back")
-        # Create extended options list
-        options_with_back = list(options) + [(next_num, "Back")]
+        print(f"  {Fore.YELLOW}{Style.BRIGHT}{next_num}{Style.RESET_ALL}) ← Voltar")
+        options_with_back = list(options) + [(next_num, "Voltar")]
     else:
         options_with_back = list(options)
 
     valid = {key.upper(): key for key, _ in options_with_back}
     back_inputs = set(BACK_COMMANDS)
     quit_inputs = set(QUIT_COMMANDS)
-
     if "B" in valid:
         back_inputs.discard("B")
     if "Q" in valid:
         quit_inputs.discard("Q")
 
     while True:
-        choice = input(f"\n{Fore.CYAN}➤ Your choice: {Style.RESET_ALL}").strip().upper()
+        choice = input(f"\n{Fore.CYAN}➤ Escolha: {Style.RESET_ALL}").strip().upper()
         if allow_back and choice in back_inputs:
             return NAV_BACK
         if allow_quit and choice in quit_inputs:
             return NAV_QUIT
         if choice in valid:
             selected_key = valid[choice]
-            # Check if user selected the Back option
             if allow_back and selected_key == str(len(options) + 1):
                 return NAV_BACK
             return selected_key
-        print_error("Invalid choice, try again.")
+        print_error("Opção inválida, tente novamente.")
 
 
 def ask_positive_int(prompt: str, *, allow_back: bool = False, allow_quit: bool = False) -> int | str:
@@ -921,20 +842,20 @@ def ask_positive_int(prompt: str, *, allow_back: bool = False, allow_quit: bool 
             return NAV_QUIT
         if raw.isdigit() and int(raw) > 0:
             return int(raw)
-        print_error("Please type a positive integer.")
+        print_error("Por favor insira um número inteiro positivo.")
 
 
 def ask_folder_name(*, allow_quit: bool = False) -> str:
     while True:
-        folder = input(f"{Fore.CYAN}➤ Output folder name (relative path): {Style.RESET_ALL}").strip()
+        folder = input(f"{Fore.CYAN}➤ Nome da pasta de destino: {Style.RESET_ALL}").strip()
         upper = folder.upper()
         if allow_quit and upper in QUIT_COMMANDS:
             return NAV_QUIT
         if not folder:
-            print_error("Folder name cannot be empty.")
+            print_error("O nome da pasta não pode estar vazio.")
             continue
         if not FOLDER_NAME_PATTERN.fullmatch(folder):
-            print_error("Use only letters, numbers, '.', '_', '-', '/' or '\\\\'.")
+            print_error("Use apenas letras, números, '.', '_', '-', '/' ou '\\\\'.")
             continue
         return folder
 
@@ -971,14 +892,13 @@ def total_page_count(output_dir: Path) -> int:
 
 def write_folder_main_tex(output_dir: Path, total_pages: int) -> None:
     root_main = Path.cwd() / "main" / "main.tex"
-
     if root_main.exists():
         template = root_main.read_text(encoding="utf-8")
     else:
         template = (
             r"\documentclass[a5paper,11pt]{article}" "\n"
             r"\begin{document}" "\n"
-            r"\input{1.tex}" "\n"
+            r"\input{51.tex}" "\n"
             r"\end{document}" "\n"
         )
 
@@ -1001,7 +921,6 @@ def write_folder_main_tex(output_dir: Path, total_pages: int) -> None:
         r"\input{extras/vitorias.tex}",
         r"\IfFileExists{../extras/vitorias.tex}{\input{../extras/vitorias.tex}}{}",
     )
-
     (output_dir / "main.tex").write_text(content, encoding="utf-8")
 
 
@@ -1018,87 +937,56 @@ def generate_pages(
     rng: random.Random,
 ) -> Tuple[int, int]:
     start_page = next_page_number(output_dir)
-
-    print_info(f"Generating {pages_count} page(s) starting from page {start_page}...")
+    print_info(f"A gerar {pages_count} página(s) a partir da página {start_page}...")
 
     for offset in range(pages_count):
         page_number = start_page + offset
-        print(f"{Fore.CYAN}[{offset + 1}/{pages_count}]{Style.RESET_ALL} Generating page {page_number}...", end=" ", flush=True)
+        print(f"{Fore.CYAN}[{offset + 1}/{pages_count}]{Style.RESET_ALL} A gerar página {page_number}...", end=" ", flush=True)
 
         if page_type in {"A", "B"}:
             length_plan = build_length_plan(14, rng)
             words_a = provider.sample_words(length_plan, used_tokens, used_words)
             register_words(words_a, used_tokens, used_words, used_word_set)
-
             words_b = provider.sample_words(length_plan, used_tokens, used_words)
             register_words(words_b, used_tokens, used_words, used_word_set)
-
             grid_a = generate_grid(words_a, rows=14, cols=11, difficulty_bonus=difficulty.bonus, rng=rng)
             grid_b = generate_grid(words_b, rows=14, cols=11, difficulty_bonus=difficulty.bonus, rng=rng)
-
             page_tex = render_battle_page(
-                grid_a=grid_a,
-                grid_b=grid_b,
-                words_a=words_a,
-                words_b=words_b,
-                difficulty=difficulty,
-                with_details=(page_type == "A"),
+                grid_a=grid_a, grid_b=grid_b,
+                words_a=words_a, words_b=words_b,
+                difficulty=difficulty, with_details=(page_type == "A"),
             )
         elif page_type == "C":
             length_plan = build_length_plan(20, rng)
             words = provider.sample_words(length_plan, used_tokens, used_words)
             register_words(words, used_tokens, used_words, used_word_set)
-
             grid = generate_grid(words, rows=28, cols=17, difficulty_bonus=difficulty.bonus, rng=rng)
-            page_tex = render_type_c_page(
-                grid=grid,
-                words=words,
-                difficulty=difficulty,
-                grid_on_left=True,
-            )
+            page_tex = render_type_c_page(grid=grid, words=words, difficulty=difficulty, grid_on_left=True)
         elif page_type == "D":
-            length_plan = build_length_plan(27, rng)
+            length_plan = build_length_plan(30, rng)
             words = provider.sample_words(length_plan, used_tokens, used_words)
             register_words(words, used_tokens, used_words, used_word_set)
-
-            grid = generate_grid(words, rows=20, cols=20, difficulty_bonus=difficulty.bonus, rng=rng)
-            page_tex = render_type_d_page(
-                grid=grid,
-                words=words,
-                difficulty=difficulty,
-                words_on_top=True,
-            )
+            grid = generate_grid(words, rows=21, cols=20, difficulty_bonus=difficulty.bonus, rng=rng)
+            page_tex = render_type_d_page(grid=grid, words=words, difficulty=difficulty, words_on_top=True)
         elif page_type == "E":
-            # Type E: Like Type B but with 16 words each (14+2) and 14 cols (11+3)
             length_plan = build_length_plan(16, rng)
             words_a = provider.sample_words(length_plan, used_tokens, used_words)
             register_words(words_a, used_tokens, used_words, used_word_set)
-
             words_b = provider.sample_words(length_plan, used_tokens, used_words)
             register_words(words_b, used_tokens, used_words, used_word_set)
-
             grid_a = generate_grid(words_a, rows=14, cols=14, difficulty_bonus=difficulty.bonus, rng=rng)
             grid_b = generate_grid(words_b, rows=14, cols=14, difficulty_bonus=difficulty.bonus, rng=rng)
-
             page_tex = render_type_e_page(
-                grid_a=grid_a,
-                grid_b=grid_b,
-                words_a=words_a,
-                words_b=words_b,
+                grid_a=grid_a, grid_b=grid_b,
+                words_a=words_a, words_b=words_b,
                 difficulty=difficulty,
             )
-        else:  # Type F
-            # Type F: 30 rows (24+6), 12 cols, 22 words (18+4)
+        else:
             length_plan = build_length_plan(22, rng)
             words = provider.sample_words(length_plan, used_tokens, used_words)
             register_words(words, used_tokens, used_words, used_word_set)
-
             grid = generate_grid(words, rows=30, cols=12, difficulty_bonus=difficulty.bonus, rng=rng)
-            page_tex = render_type_f_page(
-                grid=grid,
-                words=words,
-                difficulty=difficulty,
-            )
+            page_tex = render_type_f_page(grid=grid, words=words, difficulty=difficulty)
 
         file_path = output_dir / f"{page_number}.tex"
         file_path.write_text(page_tex, encoding="utf-8")
@@ -1109,48 +997,58 @@ def generate_pages(
     return start_page, start_page + pages_count - 1
 
 
+PAGE_TYPE_OPTIONS = [
+    ("A", "Batalha com 2 puzzles 14×11 + data/vencedor/tempo   (14 palavras cada)"),
+    ("B", "Batalha com 2 puzzles 14×11 sem detalhes             (14 palavras cada)"),
+    ("C", "Puzzle único 28×17 com lista lateral                 (20 palavras)"),
+    ("D", "Puzzle único 21×20 com lista em cima                 (30 palavras, 6 colunas)"),
+    ("E", "Batalha com 2 puzzles 14×14 sem detalhes             (16 palavras cada)"),
+    ("F", "Puzzle único 30×12 com lista lateral                 (22 palavras)"),
+]
+
+
 def main() -> None:
     rng = random.Random()
 
     clear_screen()
-    print_header("🧩 Soup of Letters Book Generator 🧩")
-    print_info("Tip: You can type 'Q' or 'QUIT' at any time to exit")
+    print_header("🧩 Gerador de Livros de Sopa de Letras 🧩")
+    print_info("Escreva 'Q' ou 'SAIR' em qualquer momento para sair")
     print()
 
     source_choice = ask_choice(
-        "Word source:",
+        "Fonte de palavras:",
         [
-            ("1", "JSON files (palavras/4..8.json)"),
-            ("2", "AI generated words"),
+            ("1", "Ficheiros JSON (palavras/4..8.json)"),
+            ("2", "Palavras geradas por IA"),
         ],
         allow_quit=True,
     )
     if source_choice == NAV_QUIT:
         clear_screen()
-        print_success("Goodbye! 👋")
+        print_success("Até logo! 👋")
         return
 
     clear_screen()
-    print_header("🧩 Soup of Letters Book Generator 🧩")
+    print_header("🧩 Gerador de Livros de Sopa de Letras 🧩")
     folder_name = ask_folder_name(allow_quit=True)
     if folder_name == NAV_QUIT:
         clear_screen()
-        print_success("Goodbye! 👋")
+        print_success("Até logo! 👋")
         return
 
     output_dir = Path(folder_name)
     if not output_dir.is_absolute():
         output_dir = Path.cwd() / output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
-    print_success(f"Output folder: {output_dir}")
+    print_success(f"Pasta de destino: {output_dir}")
 
     current_source = source_choice
     json_provider: JsonWordProvider | None = None
     if current_source == "1":
-        print_info("Loading word pools from JSON files...")
+        print_info("A carregar palavras dos ficheiros JSON...")
         word_pools = load_word_pools(Path.cwd() / "palavras")
         json_provider = JsonWordProvider(word_pools, rng)
-        print_success("Word pools loaded successfully!")
+        print_success("Palavras carregadas com sucesso!")
 
     used_tokens: Set[str] = set()
     used_words: List[str] = []
@@ -1158,24 +1056,26 @@ def main() -> None:
 
     while True:
         clear_screen()
-        print_header("🧩 Soup of Letters Book Generator 🧩")
+        print_header("🧩 Gerador de Livros de Sopa de Letras 🧩")
 
-        source_label = f"{Fore.GREEN}JSON files{Style.RESET_ALL}" if current_source == "1" else f"{Fore.MAGENTA}AI generated{Style.RESET_ALL}"
+        source_label = (
+            f"{Fore.GREEN}Ficheiros JSON{Style.RESET_ALL}"
+            if current_source == "1"
+            else f"{Fore.MAGENTA}IA{Style.RESET_ALL}"
+        )
         total_pages = total_page_count(output_dir)
-
-        info_lines = [
-            f"Output folder: {output_dir}",
-            f"Word source: {source_label}",
-            f"Total pages: {total_pages}",
-        ]
-        print_box(info_lines, Fore.CYAN)
+        print_box([
+            f"Pasta:         {output_dir}",
+            f"Fonte:         {source_label}",
+            f"Total páginas: {total_pages}",
+        ], Fore.CYAN)
 
         menu_choice = ask_choice(
-            "Main Menu",
+            "Menu Principal",
             [
-                ("1", "Generate pages"),
-                ("2", "Change word source"),
-                ("3", "Quit"),
+                ("1", "Gerar páginas"),
+                ("2", "Alterar fonte de palavras"),
+                ("3", "Sair"),
             ],
             allow_quit=True,
         )
@@ -1185,12 +1085,12 @@ def main() -> None:
 
         if menu_choice == "2":
             clear_screen()
-            print_header("🧩 Soup of Letters Book Generator 🧩")
+            print_header("🧩 Gerador de Livros de Sopa de Letras 🧩")
             source_choice = ask_choice(
-                "Word source:",
+                "Fonte de palavras:",
                 [
-                    ("1", "JSON files (palavras/4..8.json)"),
-                    ("2", "AI generated words"),
+                    ("1", "Ficheiros JSON (palavras/4..8.json)"),
+                    ("2", "Palavras geradas por IA"),
                 ],
                 allow_back=True,
                 allow_quit=True,
@@ -1199,134 +1099,140 @@ def main() -> None:
                 continue
             if source_choice == NAV_QUIT:
                 break
-
             current_source = source_choice
             if current_source == "1":
-                print_info("Loading word pools from JSON files...")
+                print_info("A carregar palavras dos ficheiros JSON...")
                 word_pools = load_word_pools(Path.cwd() / "palavras")
                 json_provider = JsonWordProvider(word_pools, rng)
-                print_success("Word pools loaded successfully!")
-                input(f"\n{Fore.CYAN}Press Enter to continue...{Style.RESET_ALL}")
+                print_success("Palavras carregadas com sucesso!")
+                input(f"\n{Fore.CYAN}Prima Enter para continuar...{Style.RESET_ALL}")
             continue
 
-        # Clear before page type selection
-        clear_screen()
-        print_header("🧩 Soup of Letters Book Generator 🧩")
-        page_type = ask_choice(
-            "Page type:",
-            [
-                ("A", "Battle (2 puzzles + date/winner/time)"),
-                ("B", "Battle single-player (2 puzzles, no details)"),
-                ("C", "Single puzzle 28x17 with 20 words"),
-                ("D", "Square puzzle 20x20 with 27 words (6 columns)"),
-                ("E", "Battle 14x14 with 16 words each (no details)"),
-                ("F", "Tall format 30x12 with 22 words (side list)"),
-            ],
-            allow_back=True,
-            allow_quit=True,
-        )
-        if page_type == NAV_BACK:
-            continue
-        if page_type == NAV_QUIT:
-            break
-
-        # Clear before pages count input
-        clear_screen()
-        print_header("🧩 Soup of Letters Book Generator 🧩")
-        pages_count = ask_positive_int(
-            "How many pages to generate?",
-            allow_back=True,
-            allow_quit=True,
-        )
-        if pages_count == NAV_BACK:
-            continue
-        if pages_count == NAV_QUIT:
-            break
-
-        # Clear before difficulty selection
-        clear_screen()
-        print_header("🧩 Soup of Letters Book Generator 🧩")
-        difficulty_choice = ask_choice(
-            "Difficulty:",
-            [
-                ("1", "Fácil"),
-                ("2", "Médio"),
-                ("3", "Dificil"),
-                ("4", "Impossível"),
-            ],
-            allow_back=True,
-            allow_quit=True,
-        )
-        if difficulty_choice == NAV_BACK:
-            continue
-        if difficulty_choice == NAV_QUIT:
-            break
-        difficulty = DIFFICULTIES[difficulty_choice]
-
-        themes: List[str] = []
-        if current_source == "2":
+        # --- Page generation loop: stays on page type selector after each generation ---
+        while True:
             clear_screen()
-            print_header("🧩 Soup of Letters Book Generator 🧩")
-            print_info("Enter themes separated by commas (e.g., 'animals, food, sports')")
-            print_info("Leave blank for random themes")
-            raw_themes = ask_text(
-                f"\n{Fore.CYAN}➤ Themes: {Style.RESET_ALL}",
+            print_header("🧩 Gerador de Livros de Sopa de Letras 🧩")
+            total_pages = total_page_count(output_dir)
+            print_box([
+                f"Pasta:         {output_dir}",
+                f"Fonte:         {source_label}",
+                f"Total páginas: {total_pages}",
+            ], Fore.CYAN)
+
+            page_type = ask_choice(
+                "Tipo de página:",
+                PAGE_TYPE_OPTIONS,
                 allow_back=True,
                 allow_quit=True,
             )
-            if raw_themes == NAV_BACK:
-                continue
-            if raw_themes == NAV_QUIT:
+            if page_type == NAV_BACK:
                 break
-            if raw_themes:
-                themes = [part.strip() for part in raw_themes.split(",") if part.strip()]
-                print_success(f"Using themes: {', '.join(themes)}")
+            if page_type == NAV_QUIT:
+                # propagate quit up to outer loop
+                menu_choice = NAV_QUIT
+                break
 
-        clear_screen()
-        print_header("🧩 Soup of Letters Book Generator 🧩")
-
-        try:
-            if current_source == "1":
-                if json_provider is None:
-                    print_info("Loading word pools from JSON files...")
-                    word_pools = load_word_pools(Path.cwd() / "palavras")
-                    json_provider = JsonWordProvider(word_pools, rng)
-                    print_success("Word pools loaded successfully!")
-                provider: WordProvider = json_provider
-            else:
-                print_info("Initializing AI word provider...")
-                provider = AIWordProvider(themes=themes, rng=rng)
-                print_success("AI provider ready!")
-
-            first_page, last_page = generate_pages(
-                provider=provider,
-                page_type=page_type,
-                pages_count=int(pages_count),
-                difficulty=difficulty,
-                output_dir=output_dir,
-                used_tokens=used_tokens,
-                used_words=used_words,
-                used_word_set=used_word_set,
-                rng=rng,
+            clear_screen()
+            print_header("🧩 Gerador de Livros de Sopa de Letras 🧩")
+            pages_count = ask_positive_int(
+                "Quantas páginas gerar?",
+                allow_back=True,
+                allow_quit=True,
             )
+            if pages_count == NAV_BACK:
+                continue
+            if pages_count == NAV_QUIT:
+                menu_choice = NAV_QUIT
+                break
 
-            print()
-            result_lines = [
-                f"✓ Generated pages {first_page} to {last_page}",
-                f"✓ Saved to: {output_dir}",
-                f"✓ Updated: {output_dir / 'main.tex'}",
-            ]
-            print_box(result_lines, Fore.GREEN)
+            clear_screen()
+            print_header("🧩 Gerador de Livros de Sopa de Letras 🧩")
+            difficulty_choice = ask_choice(
+                "Dificuldade:",
+                [
+                    ("1", "Fácil"),
+                    ("2", "Médio"),
+                    ("3", "Difícil"),
+                    ("4", "Impossível"),
+                ],
+                allow_back=True,
+                allow_quit=True,
+            )
+            if difficulty_choice == NAV_BACK:
+                continue
+            if difficulty_choice == NAV_QUIT:
+                menu_choice = NAV_QUIT
+                break
+            difficulty = DIFFICULTIES[difficulty_choice]
 
-            input(f"\n{Fore.CYAN}Press Enter to continue...{Style.RESET_ALL}")
-        except Exception as error:
-            print()
-            print_error(f"Error: {error}")
-            input(f"\n{Fore.CYAN}Press Enter to continue...{Style.RESET_ALL}")
+            themes: List[str] = []
+            if current_source == "2":
+                clear_screen()
+                print_header("🧩 Gerador de Livros de Sopa de Letras 🧩")
+                print_info("Insira temas separados por vírgulas (ex: 'animais, desporto, comida')")
+                print_info("Deixe em branco para temas aleatórios")
+                raw_themes = ask_text(
+                    f"\n{Fore.CYAN}➤ Temas: {Style.RESET_ALL}",
+                    allow_back=True,
+                    allow_quit=True,
+                )
+                if raw_themes == NAV_BACK:
+                    continue
+                if raw_themes == NAV_QUIT:
+                    menu_choice = NAV_QUIT
+                    break
+                if raw_themes:
+                    themes = [part.strip() for part in raw_themes.split(",") if part.strip()]
+                    print_success(f"Temas: {', '.join(themes)}")
+
+            clear_screen()
+            print_header("🧩 Gerador de Livros de Sopa de Letras 🧩")
+
+            try:
+                if current_source == "1":
+                    if json_provider is None:
+                        print_info("A carregar palavras dos ficheiros JSON...")
+                        word_pools = load_word_pools(Path.cwd() / "palavras")
+                        json_provider = JsonWordProvider(word_pools, rng)
+                        print_success("Palavras carregadas com sucesso!")
+                    provider: WordProvider = json_provider
+                else:
+                    print_info("A inicializar o fornecedor de palavras por IA...")
+                    provider = AIWordProvider(themes=themes, rng=rng)
+                    print_success("Fornecedor IA pronto!")
+
+                first_page, last_page = generate_pages(
+                    provider=provider,
+                    page_type=page_type,
+                    pages_count=int(pages_count),
+                    difficulty=difficulty,
+                    output_dir=output_dir,
+                    used_tokens=used_tokens,
+                    used_words=used_words,
+                    used_word_set=used_word_set,
+                    rng=rng,
+                )
+
+                print()
+                print_box([
+                    f"✓ Páginas {first_page} a {last_page} geradas",
+                    f"✓ Guardadas em: {output_dir}",
+                    f"✓ Atualizado: {output_dir / 'main.tex'}",
+                ], Fore.GREEN)
+
+            except Exception as error:
+                print()
+                print_error(f"Erro: {error}")
+
+            input(f"\n{Fore.CYAN}Prima Enter para continuar...{Style.RESET_ALL}")
+            # loop back to page type selector
+
+        if menu_choice == NAV_QUIT:
+            break
 
     clear_screen()
-    print_header("🧩 Soup of Letters Book Generator 🧩")
-    print_success("Thank you for using the generator! 👋")
+    print_header("🧩 Gerador de Livros de Sopa de Letras 🧩")
+    print_success("Obrigado por usar o gerador! 👋")
     print()
 
 
